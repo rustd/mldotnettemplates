@@ -4,6 +4,7 @@
  * Note that this model was trained on a very small sample dataset, which leads to a relatively low accuracy.*/
 using System;
 using Microsoft.ML;
+using Microsoft.ML.Legacy;
 using Microsoft.ML.Runtime.Api;
 
 namespace MLNETModelLibrary
