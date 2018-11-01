@@ -3,9 +3,10 @@
  * found at https://aka.ms/mlnetsentimentanalysis, which provides a more detailed introduction to ML.NET and the scenario.
  * Note that this model was trained on a very small sample dataset, which leads to a relatively low accuracy.*/
 using System;
+using System.IO;
 using Microsoft.ML;
-using Microsoft.ML.Legacy;
 using Microsoft.ML.Runtime.Api;
+using Microsoft.ML.Runtime.Data;
 
 namespace MLNETModelLibrary
 {
@@ -14,11 +15,15 @@ namespace MLNETModelLibrary
         public static string Predict(SentimentData input)
         {
             // 1. Load the model from file.
-            var model = PredictionModel.ReadAsync<SentimentData, SentimentPrediction>(@"Models\sentiment_model.zip").Result;
+            var env = new LocalEnvironment();
+            var stream = new FileStream(@"Models\sentiment_model.zip", FileMode.Open, FileAccess.Read, FileShare.Read);
+            var model = TransformerChain.LoadFrom(env, stream);
 
-            // 2. Use the model for a single prediction.
-            var sentiment = model.Predict(input).Sentiment ? "Positive" : "Negative";
-            Console.WriteLine($"Predicted sentiment for \"{input.SentimentText}\" is: {sentiment}");
+            // 2. Predict the sentiment
+            var predictionFunct = model.MakePredictionFunction<SentimentData, SentimentPrediction>(env);
+            var resultprediction = predictionFunct.Predict(input);
+            var sentiment = (Convert.ToBoolean(resultprediction.Prediction) ? "Positive" : "Negative");
+            Console.WriteLine($"Predicted sentiment for \"{input.Text}\" is:" + sentiment);
             return sentiment;
         }
     }
@@ -28,10 +33,8 @@ namespace MLNETModelLibrary
     /// </summary>
     public class SentimentData
     {
-        [Column(ordinal: "0", name: "Label")]
-        public float Sentiment { get; set; }
-        [Column(ordinal: "1")]
-        public string SentimentText { get; set; }
+        public bool Label { get; set; }
+        public string Text { get; set; }
     }
 
     /// <summary>
@@ -40,6 +43,6 @@ namespace MLNETModelLibrary
     public class SentimentPrediction
     {
         [ColumnName("PredictedLabel")]
-        public bool Sentiment { get; set; }
+        public bool Prediction { get; set; }
     }
 }
