@@ -9,6 +9,12 @@ using Microsoft.ML.Runtime.Data;
 using Microsoft.ML.Core.Data;
 using Microsoft.ML;
 using Microsoft.ML.Runtime.Api;
+using Microsoft.ML.Trainers;
+using Microsoft.ML.Transforms;
+using Microsoft.ML.Transforms.Categorical;
+using Microsoft.ML.Transforms.Conversions;
+using Microsoft.ML.Transforms.Text;
+using static Microsoft.ML.Runtime.TransformsCatalog;
 
 namespace MLNETConsoleApp
 {
@@ -18,9 +24,9 @@ namespace MLNETConsoleApp
         {
             // 1. Build an ML.NET pipeline for training a sentiment analysis model
             Console.WriteLine("Training a model for Sentiment Analysis using ML.NET");
-            var env = new LocalEnvironment();
+            MLContext mlContext = new MLContext();
             // 1a. Load the training data using a TextLoader.
-            var reader = new TextLoader(env,
+            TextLoader reader = new TextLoader(mlContext,
                                             new TextLoader.Arguments()
                                             {
                                                 Separator = "tab",
@@ -35,9 +41,8 @@ namespace MLNETConsoleApp
             IDataView trainingDataView = reader.Read(new MultiFileSource(@"Data\wikipedia-detox-250-line-data.tsv"));
             // 2. Create a pipeline to prepare your data, pick your features and apply a machine learning algorithm 
             // 2a. Featurize the text into a numeric vector that can be used by the machine learning algorithm.
-            var pipeline = new TextTransform(env, "Text", "Features")  //Convert the text column to numeric vectors (Features column)   
-                                           .Append(new LinearClassificationTrainer(env, new LinearClassificationTrainer.Arguments(),
-                                                                                   "Features", "Label"));
+            var pipeline = new TextFeaturizingEstimator(mlContext, "Text", "Features")
+                                           .Append(new LinearClassificationTrainer(mlContext,"Features", "Label"));
 
             // 2b. Add AveragedPerceptron (a linear learner) to the pipeline.
             //new AveragedPerceptronBinaryClassifier() { NumIterations = 10 }
@@ -49,14 +54,14 @@ namespace MLNETConsoleApp
             Console.WriteLine("Training of model is complete \nTesting the model with test data");
             IDataView testDataView = reader.Read(new MultiFileSource(@"Data\wikipedia-detox-250-line-test.tsv"));
             var predictions = model.Transform(testDataView);
-            var binClassificationCtx = new BinaryClassificationContext(env);
-            var metrics = binClassificationCtx.Evaluate(predictions, "Label");
+            BinaryClassificationContext binClassificationCtx = new BinaryClassificationContext(mlContext);
+            BinaryClassifierEvaluator.CalibratedResult metrics = binClassificationCtx.Evaluate(predictions, "Label");
             Console.WriteLine($"Accuracy: {metrics.Accuracy:P2}");
 
             // 5. Use the model for a single prediction.
-            var predictionFunct = model.MakePredictionFunction<SentimentData, SentimentPrediction>(env);
+            PredictionFunction<SentimentData, SentimentPrediction> predictionFunct = model.MakePredictionFunction<SentimentData, SentimentPrediction>(mlContext);
             SentimentData testInput = new SentimentData { Text = "ML.NET is fun, more samples at https://github.com/dotnet/machinelearning-samples" };
-            var resultprediction = predictionFunct.Predict(testInput);
+            SentimentPrediction resultprediction = predictionFunct.Predict(testInput);
 
             /* This template uses a minimal dataset to build a sentiment analysis model which leads to relatively low accuracy. 
              * Building good Machine Learning models require large volumes of data. This template comes with a minimal dataset (Data/wikipedia-detox) for sentiment analysis. 
@@ -65,8 +70,8 @@ namespace MLNETConsoleApp
 
             // 6. Save the model to file so it can be used in another app.
             Console.WriteLine("Saving the model");
-            var fs = new FileStream("sentiment_model.zip", FileMode.Create, FileAccess.Write, FileShare.Write);
-            model.SaveTo(env, fs);
+            FileStream fs = new FileStream("sentiment_model.zip", FileMode.Create, FileAccess.Write, FileShare.Write);
+            model.SaveTo(mlContext, fs);
         }
 
         /// <summary>

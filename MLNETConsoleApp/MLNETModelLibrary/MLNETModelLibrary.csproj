@@ -6,9 +6,12 @@
 
   <ItemGroup>
     <Folder Include="Models\" />
-    <PackageReference Include="Microsoft.ML" Version="0.6.0" />
+    <PackageReference Include="Microsoft.ML" Version="0.7.0-preview-27031-8" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Models\sentiment_model.zip">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

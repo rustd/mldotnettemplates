@@ -15,12 +15,12 @@ namespace MLNETModelLibrary
         public static string Predict(SentimentData input)
         {
             // 1. Load the model from file.
-            var env = new LocalEnvironment();
+            MLContext mlContext = new MLContext();
             var stream = new FileStream(@"Models\sentiment_model.zip", FileMode.Open, FileAccess.Read, FileShare.Read);
-            var model = TransformerChain.LoadFrom(env, stream);
+            var model = TransformerChain.LoadFrom(mlContext, stream);
 
             // 2. Predict the sentiment
-            var predictionFunct = model.MakePredictionFunction<SentimentData, SentimentPrediction>(env);
+            var predictionFunct = model.MakePredictionFunction<SentimentData, SentimentPrediction>(mlContext);
             var resultprediction = predictionFunct.Predict(input);
             var sentiment = (Convert.ToBoolean(resultprediction.Prediction) ? "Positive" : "Negative");
             Console.WriteLine($"Predicted sentiment for \"{input.Text}\" is:" + sentiment);
