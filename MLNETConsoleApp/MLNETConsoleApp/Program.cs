@@ -42,10 +42,7 @@ namespace MLNETConsoleApp
             // 2. Create a pipeline to prepare your data, pick your features and apply a machine learning algorithm 
             // 2a. Featurize the text into a numeric vector that can be used by the machine learning algorithm.
             var pipeline = new TextFeaturizingEstimator(mlContext, "Text", "Features")
-                                           .Append(new LinearClassificationTrainer(mlContext,"Features", "Label"));
-
-            // 2b. Add AveragedPerceptron (a linear learner) to the pipeline.
-            //new AveragedPerceptronBinaryClassifier() { NumIterations = 10 }
+                                           .Append(mlContext.BinaryClassification.Trainers.StochasticDualCoordinateAscent( "Label", "Features"));
 
             // 3. Get a model by training the pipeline that was built.
             var model = pipeline.Fit(trainingDataView);
